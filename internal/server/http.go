@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"log"
 
 	"github.com/ajanjairam/m3u-manager/internal/repository"
@@ -42,11 +43,20 @@ func (s *HTTPServer) Register(db *sql.DB, repo *repository.Queries) *HTTPServer 
 	return s
 }
 
-func (s *HTTPServer) Static(env string) *HTTPServer {
+func (s *HTTPServer) Static(env string, clientFS fs.FS) *HTTPServer {
+	clientSubFS, err := fs.Sub(clientFS, "client")
+	if err != nil {
+		log.Fatal(err)
+	}
 	if env == "production" {
-		s.app.Use(static.New("./client"))
+		s.app.Use(static.New("", static.Config{FS: clientSubFS}))
 		s.app.Get("/*", func(c fiber.Ctx) error {
-			return c.SendFile("./client/index.html")
+			data, err := fs.ReadFile(clientSubFS, "index.html")
+			if err != nil {
+				return c.SendStatus(fiber.StatusNotFound)
+			}
+			c.Type("html")
+			return c.Send(data)
 		})
 	}
 	return s

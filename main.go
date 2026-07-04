@@ -13,6 +13,9 @@ import (
 //go:embed assets/migrations/*.sql
 var migrationsFS embed.FS
 
+//go:embed client/*
+var clientFS embed.FS
+
 func main() {
 	flags := cmd.RegisterFlags()
 	db := database.NewDatabase()
@@ -24,6 +27,6 @@ func main() {
 	server.NewServer(fiber.Config{AppName: "M3U Manager"}).
 		Cors(flags.Env).
 		Register(db.DB, repo).
-		Static(flags.Env).
+		Static(flags.Env, clientFS).
 		Start(flags.Host, flags.Port)
 }
