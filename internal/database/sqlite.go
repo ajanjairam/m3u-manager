@@ -1,8 +1,10 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"log"
 	"log/slog"
 	"os"
@@ -41,12 +43,17 @@ func NewDatabase() *Database {
 	return &Database{DB: db}
 }
 
-func (d *Database) Migrate() {
-	err := goose.SetDialect("sqlite")
+func (d *Database) Migrate(migrationsFS fs.FS) {
+	subFS, err := fs.Sub(migrationsFS, "assets/migrations")
+	if err != nil {
+		log.Fatal(err)
+	}
+	provider, err := goose.NewProvider(goose.DialectSQLite3, d.DB, subFS)
 	if err != nil {
 		slog.Error(err.Error())
+		return
 	}
-	err = goose.Up(d.DB, "assets/migrations")
+	_, err = provider.Up(context.Background())
 	if err != nil {
 		slog.Error(err.Error())
 	}
