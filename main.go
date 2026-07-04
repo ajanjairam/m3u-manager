@@ -13,7 +13,7 @@ import (
 //go:embed assets/migrations/*.sql
 var migrationsFS embed.FS
 
-//go:embed client/*
+//go:embed all:client/*
 var clientFS embed.FS
 
 func main() {

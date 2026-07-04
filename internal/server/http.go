@@ -44,11 +44,12 @@ func (s *HTTPServer) Register(db *sql.DB, repo *repository.Queries) *HTTPServer 
 }
 
 func (s *HTTPServer) Static(env string, clientFS fs.FS) *HTTPServer {
-	clientSubFS, err := fs.Sub(clientFS, "client")
-	if err != nil {
-		log.Fatal(err)
-	}
 	if env == "production" {
+		clientSubFS, err := fs.Sub(clientFS, "client")
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		s.app.Use(static.New("", static.Config{FS: clientSubFS}))
 		s.app.Get("/*", func(c fiber.Ctx) error {
 			data, err := fs.ReadFile(clientSubFS, "index.html")
