@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/ajanjairam/m3u-manager/internal/repository"
-	"github.com/jamesnetherton/m3u"
 	"github.com/samber/lo"
 )
 
@@ -42,7 +41,7 @@ func (s *PlaylistService) SavePlaylistAndChannels(ctx context.Context, input rep
 		return nil, fmt.Errorf("name is required")
 	}
 
-	m3uPlaylist, err := m3u.Parse(input.Uri)
+	m3uPlaylist, err := ParseM3U(ctx, input.Uri)
 	if err != nil {
 		return nil, err
 	}
@@ -64,28 +63,15 @@ func (s *PlaylistService) SavePlaylistAndChannels(ctx context.Context, input rep
 	}
 
 	var tracks []repository.Channel
-	for _, track := range m3uPlaylist.Tracks {
-		var tvgId, tvgName, tvgLogo, groupTitle *string
-		for _, tag := range track.Tags {
-			switch tag.Name {
-			case "tvg-id":
-				tvgId = &tag.Value
-			case "tvg-name":
-				tvgName = &tag.Value
-			case "tvg-logo":
-				tvgLogo = &tag.Value
-			case "group-title":
-				groupTitle = &tag.Value
-			}
-		}
+	for _, track := range m3uPlaylist.Channels {
 		insertedChannel, err := qtx.SaveChannel(ctx, repository.SaveChannelParams{
 			Name:       track.Name,
-			Uri:        track.URI,
-			Length:     new(int64(track.Length)),
-			TvgID:      tvgId,
-			TvgName:    tvgName,
-			TvgLogo:    tvgLogo,
-			GroupTitle: groupTitle,
+			Uri:        track.Uri,
+			Length:     &track.Length,
+			TvgID:      &track.TvgID,
+			TvgName:    &track.TvgName,
+			TvgLogo:    &track.TvgLogo,
+			GroupTitle: &track.GroupTitle,
 			PlaylistID: &insertedPlayList.ID,
 		})
 		if err != nil {

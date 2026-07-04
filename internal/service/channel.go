@@ -5,11 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 
 	"github.com/ajanjairam/m3u-manager/internal/models"
 	"github.com/ajanjairam/m3u-manager/internal/repository"
-	"github.com/jamesnetherton/m3u"
 	"github.com/samber/lo"
 )
 
@@ -41,36 +39,22 @@ func (s *ChannelService) FindById(ctx context.Context, id int64) (repository.Cha
 	return s.repo.FindChannelById(ctx, id)
 }
 
-func (s *ChannelService) GetM3UPlaylist(ctx context.Context) (io.Reader, error) {
-	trackList, err := s.repo.FindAllActiveChannel(ctx)
+func (s *ChannelService) GetM3UPlaylist(ctx context.Context) (*string, error) {
+	channelList, err := s.repo.FindAllActiveChannel(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get playlist. sql error: %w", err)
 	}
-	tracks := []m3u.Track{}
-	for _, track := range trackList {
-		tags := []m3u.Tag{}
-		if track.TvgID != nil {
-			tags = append(tags, m3u.Tag{Name: "tvg-id", Value: *track.TvgID})
-		}
-		if track.TvgName != nil {
-			tags = append(tags, m3u.Tag{Name: "tvg-name", Value: *track.TvgName})
-		}
-		if track.TvgLogo != nil {
-			tags = append(tags, m3u.Tag{Name: "tvg-logo", Value: *track.TvgLogo})
-		}
-		if track.GroupTitle != nil {
-			tags = append(tags, m3u.Tag{Name: "group-title", Value: *track.GroupTitle})
-		}
-
-		tempChannel := m3u.Track{
-			Name:   track.Name,
-			Length: int(*track.Length),
-			URI:    track.Uri,
-			Tags:   tags,
-		}
-		tracks = append(tracks, tempChannel)
+	var channels []models.Channel
+	for _, channel := range channelList {
+		channels = append(channels, models.Channel{
+			Length:     *channel.Length,
+			TvgID:      *channel.TvgID,
+			TvgName:    *channel.TvgName,
+			TvgLogo:    *channel.TvgLogo,
+			GroupTitle: *channel.GroupTitle,
+			Name:       channel.Name,
+			Uri:        channel.Uri,
+		})
 	}
-	return m3u.Marshall(m3u.Playlist{
-		Tracks: tracks,
-	})
+	return MarshalM3U(channels)
 }

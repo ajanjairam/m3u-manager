@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 
 	"github.com/ajanjairam/m3u-manager/internal/repository"
@@ -88,14 +87,12 @@ func registerChannelRoutes(app fiber.Router, ts *service.ChannelService) {
 	})
 
 	trackApp.Get("/m3u", func(c fiber.Ctx) error {
-		playlist, err := ts.GetM3UPlaylist(c.Context())
+		m3u, err := ts.GetM3UPlaylist(c.Context())
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
 		}
-		c.Status(200)
 		c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
-		_, err = io.Copy(c.Response().BodyWriter(), playlist)
-		return err
+		return c.Status(200).SendString(*m3u)
 	})
 
 	trackApp.Get("/:id", func(c fiber.Ctx) error {

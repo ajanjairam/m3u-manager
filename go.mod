@@ -4,7 +4,6 @@ go 1.26
 
 require (
 	github.com/gofiber/fiber/v3 v3.4.0
-	github.com/jamesnetherton/m3u v0.4.0
 	github.com/pressly/goose/v3 v3.27.2
 	github.com/samber/lo v1.53.0
 	modernc.org/sqlite v1.53.0
