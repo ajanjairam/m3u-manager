@@ -7,33 +7,44 @@ package repository
 
 import (
 	"context"
+	"strings"
 )
 
 const findAllActiveChannel = `-- name: FindAllActiveChannel :many
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_title, active, playlist_id FROM CHANNEL
-WHERE ACTIVE = 1
+SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, cgroup.id, cgroup.title, cgroup.active, cgroup.playlist_id FROM CHANNEL
+INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+WHERE CHANNEL.ACTIVE = 1
 `
 
-func (q *Queries) FindAllActiveChannel(ctx context.Context) ([]Channel, error) {
+type FindAllActiveChannelRow struct {
+	Channel Channel `json:"channel"`
+	Cgroup  Cgroup  `json:"cgroup"`
+}
+
+func (q *Queries) FindAllActiveChannel(ctx context.Context) ([]FindAllActiveChannelRow, error) {
 	rows, err := q.db.QueryContext(ctx, findAllActiveChannel)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Channel
+	var items []FindAllActiveChannelRow
 	for rows.Next() {
-		var i Channel
+		var i FindAllActiveChannelRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Length,
-			&i.Uri,
-			&i.TvgID,
-			&i.TvgName,
-			&i.TvgLogo,
-			&i.GroupTitle,
-			&i.Active,
-			&i.PlaylistID,
+			&i.Channel.ID,
+			&i.Channel.Name,
+			&i.Channel.Length,
+			&i.Channel.Uri,
+			&i.Channel.TvgID,
+			&i.Channel.TvgName,
+			&i.Channel.TvgLogo,
+			&i.Channel.GroupID,
+			&i.Channel.Active,
+			&i.Channel.PlaylistID,
+			&i.Cgroup.ID,
+			&i.Cgroup.Title,
+			&i.Cgroup.Active,
+			&i.Cgroup.PlaylistID,
 		); err != nil {
 			return nil, err
 		}
@@ -49,7 +60,7 @@ func (q *Queries) FindAllActiveChannel(ctx context.Context) ([]Channel, error) {
 }
 
 const findAllChannel = `-- name: FindAllChannel :many
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_title, active, playlist_id FROM CHANNEL
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
 `
 
 func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
@@ -69,7 +80,7 @@ func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
 			&i.TvgID,
 			&i.TvgName,
 			&i.TvgLogo,
-			&i.GroupTitle,
+			&i.GroupID,
 			&i.Active,
 			&i.PlaylistID,
 		); err != nil {
@@ -86,38 +97,41 @@ func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
 	return items, nil
 }
 
-const findAllChannelPagination = `-- name: FindAllChannelPagination :many
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_title, active, playlist_id FROM CHANNEL
-ORDER BY PLAYLIST_ID, ID
-LIMIT ?2
-OFFSET ?1
+const findAllChannelAndGroup = `-- name: FindAllChannelAndGroup :many
+SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, cgroup.id, cgroup.title, cgroup.active, cgroup.playlist_id FROM CHANNEL
+INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+ORDER BY CHANNEL.PLAYLIST_ID, CHANNEL.ID
 `
 
-type FindAllChannelPaginationParams struct {
-	Page     int64 `json:"page"`
-	Pagesize int64 `json:"pagesize"`
+type FindAllChannelAndGroupRow struct {
+	Channel Channel `json:"channel"`
+	Cgroup  Cgroup  `json:"cgroup"`
 }
 
-func (q *Queries) FindAllChannelPagination(ctx context.Context, arg FindAllChannelPaginationParams) ([]Channel, error) {
-	rows, err := q.db.QueryContext(ctx, findAllChannelPagination, arg.Page, arg.Pagesize)
+func (q *Queries) FindAllChannelAndGroup(ctx context.Context) ([]FindAllChannelAndGroupRow, error) {
+	rows, err := q.db.QueryContext(ctx, findAllChannelAndGroup)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Channel
+	var items []FindAllChannelAndGroupRow
 	for rows.Next() {
-		var i Channel
+		var i FindAllChannelAndGroupRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Length,
-			&i.Uri,
-			&i.TvgID,
-			&i.TvgName,
-			&i.TvgLogo,
-			&i.GroupTitle,
-			&i.Active,
-			&i.PlaylistID,
+			&i.Channel.ID,
+			&i.Channel.Name,
+			&i.Channel.Length,
+			&i.Channel.Uri,
+			&i.Channel.TvgID,
+			&i.Channel.TvgName,
+			&i.Channel.TvgLogo,
+			&i.Channel.GroupID,
+			&i.Channel.Active,
+			&i.Channel.PlaylistID,
+			&i.Cgroup.ID,
+			&i.Cgroup.Title,
+			&i.Cgroup.Active,
+			&i.Cgroup.PlaylistID,
 		); err != nil {
 			return nil, err
 		}
@@ -133,7 +147,7 @@ func (q *Queries) FindAllChannelPagination(ctx context.Context, arg FindAllChann
 }
 
 const findChannelById = `-- name: FindChannelById :one
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_title, active, playlist_id FROM CHANNEL
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
 WHERE ID = ? LIMIT 1
 `
 
@@ -148,18 +162,102 @@ func (q *Queries) FindChannelById(ctx context.Context, id int64) (Channel, error
 		&i.TvgID,
 		&i.TvgName,
 		&i.TvgLogo,
-		&i.GroupTitle,
+		&i.GroupID,
 		&i.Active,
 		&i.PlaylistID,
 	)
 	return i, err
 }
 
+const findChannelByPlaylist = `-- name: FindChannelByPlaylist :many
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
+WHERE PLAYLIST_ID = ?
+`
+
+func (q *Queries) FindChannelByPlaylist(ctx context.Context, playlistID *int64) ([]Channel, error) {
+	rows, err := q.db.QueryContext(ctx, findChannelByPlaylist, playlistID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Length,
+			&i.Uri,
+			&i.TvgID,
+			&i.TvgName,
+			&i.TvgLogo,
+			&i.GroupID,
+			&i.Active,
+			&i.PlaylistID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const findChannelByPlaylistAndGroup = `-- name: FindChannelByPlaylistAndGroup :many
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
+WHERE PLAYLIST_ID = ?
+AND GROUP_ID = ?
+`
+
+type FindChannelByPlaylistAndGroupParams struct {
+	PlaylistID *int64 `json:"playlist_id"`
+	GroupID    *int64 `json:"group_id"`
+}
+
+func (q *Queries) FindChannelByPlaylistAndGroup(ctx context.Context, arg FindChannelByPlaylistAndGroupParams) ([]Channel, error) {
+	rows, err := q.db.QueryContext(ctx, findChannelByPlaylistAndGroup, arg.PlaylistID, arg.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Length,
+			&i.Uri,
+			&i.TvgID,
+			&i.TvgName,
+			&i.TvgLogo,
+			&i.GroupID,
+			&i.Active,
+			&i.PlaylistID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const saveChannel = `-- name: SaveChannel :one
 INSERT INTO CHANNEL
-    (NAME, LENGTH, URI, TVG_ID, TVG_NAME, TVG_LOGO, GROUP_TITLE, PLAYLIST_ID)
+    (NAME, LENGTH, URI, TVG_ID, TVG_NAME, TVG_LOGO, GROUP_ID, PLAYLIST_ID)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_title, active, playlist_id
+RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id
 `
 
 type SaveChannelParams struct {
@@ -169,7 +267,7 @@ type SaveChannelParams struct {
 	TvgID      *string `json:"tvg_id"`
 	TvgName    *string `json:"tvg_name"`
 	TvgLogo    *string `json:"tvg_logo"`
-	GroupTitle *string `json:"group_title"`
+	GroupID    *int64  `json:"group_id"`
 	PlaylistID *int64  `json:"playlist_id"`
 }
 
@@ -181,7 +279,7 @@ func (q *Queries) SaveChannel(ctx context.Context, arg SaveChannelParams) (Chann
 		arg.TvgID,
 		arg.TvgName,
 		arg.TvgLogo,
-		arg.GroupTitle,
+		arg.GroupID,
 		arg.PlaylistID,
 	)
 	var i Channel
@@ -193,9 +291,60 @@ func (q *Queries) SaveChannel(ctx context.Context, arg SaveChannelParams) (Chann
 		&i.TvgID,
 		&i.TvgName,
 		&i.TvgLogo,
-		&i.GroupTitle,
+		&i.GroupID,
 		&i.Active,
 		&i.PlaylistID,
 	)
 	return i, err
+}
+
+const updateChannelsDisable = `-- name: UpdateChannelsDisable :many
+UPDATE CHANNEL
+SET ACTIVE = 0
+WHERE ID IN (/*SLICE:ids*/?)
+RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id
+`
+
+func (q *Queries) UpdateChannelsDisable(ctx context.Context, ids []int64) ([]Channel, error) {
+	query := updateChannelsDisable
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Channel
+	for rows.Next() {
+		var i Channel
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Length,
+			&i.Uri,
+			&i.TvgID,
+			&i.TvgName,
+			&i.TvgLogo,
+			&i.GroupID,
+			&i.Active,
+			&i.PlaylistID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

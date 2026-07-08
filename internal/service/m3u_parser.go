@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/ajanjairam/m3u-manager/internal/models"
+	"github.com/samber/lo"
 )
 
 var extinfTagRe = regexp.MustCompile(`([a-zA-Z0-9-]+?)="([^"]+)"`)
@@ -25,13 +26,13 @@ var (
 	ErrReadInvalidEXTINF    = errors.New("m3u: invalid EXTINF metadata")
 	ErrWriteChannelsEmpty   = errors.New("m3u: invalid EXTINF metadata")
 	ErrWriteM3UInternal     = errors.New("m3u: error during write")
-	ErrURIPrecedesTracks    = errors.New("m3u: URI before any track definition")
+	ErrURIPrecedesChannels  = errors.New("m3u: URI before any track definition")
 )
 
-func ParseM3U(ctx context.Context, m3uSource string) (*models.Playlist, error) {
+func ParseM3U(ctx context.Context, m3uSource string) (models.Playlist, error) {
 	reader, err := parseM3USource(ctx, m3uSource)
 	if err != nil {
-		return nil, err
+		return models.Playlist{}, err
 	}
 	defer reader.Close()
 	input := bufio.NewScanner(reader)
@@ -40,14 +41,14 @@ func ParseM3U(ctx context.Context, m3uSource string) (*models.Playlist, error) {
 
 	for input.Scan() {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return models.Playlist{}, err
 		}
 		line := input.Text()
 
 		if first {
 			first = false
 			if !strings.HasPrefix(line, "#EXTM3U") {
-				return nil, ErrReadInvalidM3UHeader
+				return models.Playlist{}, ErrReadInvalidM3UHeader
 			}
 			continue
 		}
@@ -56,14 +57,14 @@ func ParseM3U(ctx context.Context, m3uSource string) (*models.Playlist, error) {
 		case strings.HasPrefix(line, "#EXTINF:"):
 			ch, err := parseEXTINF(line)
 			if err != nil {
-				return nil, err
+				return models.Playlist{}, err
 			}
-			channels = append(channels, *ch)
+			channels = append(channels, ch)
 
 		case strings.HasPrefix(line, "#"), strings.HasPrefix(line, "--"), line == "":
 
 		case len(channels) == 0:
-			return nil, fmt.Errorf("%w: %q", ErrURIPrecedesTracks, line)
+			return models.Playlist{}, fmt.Errorf("%w: %q", ErrURIPrecedesChannels, line)
 
 		case channels[len(channels)-1].Uri == "":
 			channels[len(channels)-1].Uri = strings.TrimSpace(line)
@@ -71,9 +72,9 @@ func ParseM3U(ctx context.Context, m3uSource string) (*models.Playlist, error) {
 	}
 
 	if err := input.Err(); err != nil {
-		return nil, fmt.Errorf("m3u scan: %w", err)
+		return models.Playlist{}, fmt.Errorf("m3u scan: %w", err)
 	}
-	return &models.Playlist{Channels: channels}, nil
+	return models.Playlist{Channels: channels}, nil
 }
 
 func parseM3USource(ctx context.Context, m3uSource string) (io.ReadCloser, error) {
@@ -102,73 +103,74 @@ func parseM3USource(ctx context.Context, m3uSource string) (io.ReadCloser, error
 	return reader, nil
 }
 
-func parseEXTINF(line string) (*models.Channel, error) {
+func parseEXTINF(line string) (models.Channel, error) {
 	line = strings.TrimPrefix(line, "#EXTINF:")
 
 	meta, name, ok := strings.Cut(line, ",")
 	if !ok {
-		return nil, ErrReadInvalidEXTINF
+		return models.Channel{}, ErrReadInvalidEXTINF
 	}
 
 	rawLen, tags, _ := strings.Cut(meta, " ")
 	length, err := strconv.ParseInt(rawLen, 10, 64)
 	if err != nil {
-		return nil, ErrReadInvalidEXTINF
+		return models.Channel{}, ErrReadInvalidEXTINF
 	}
 
-	channel := &models.Channel{
+	channel := models.Channel{
 		Name:   strings.TrimSpace(name),
 		Length: length,
 	}
-	mapTags(tags, channel)
+	channel = mapTags(tags, channel)
 	return channel, nil
 }
 
-func mapTags(line string, ch *models.Channel) {
+func mapTags(line string, ch models.Channel) models.Channel {
 	matches := extinfTagRe.FindAllStringSubmatch(line, -1)
-	for _, m := range matches {
-		switch m[1] {
+	lo.ForEach(matches, func(item []string, _ int) {
+		switch item[1] {
 		case "tvg-id":
-			ch.TvgID = m[2]
+			ch.TvgID = item[2]
 		case "tvg-name":
-			ch.TvgName = m[2]
+			ch.TvgName = item[2]
 		case "tvg-logo":
-			ch.TvgLogo = m[2]
+			ch.TvgLogo = item[2]
 		case "group-title":
-			ch.GroupTitle = m[2]
+			ch.GroupTitle = item[2]
 		}
-	}
+	})
+	return ch
 }
 
-func MarshalM3U(channels []models.Channel) (*string, error) {
+func MarshalM3U(channels []models.Channel) (string, error) {
 	if channels == nil || len(channels) == 0 {
-		return nil, ErrWriteChannelsEmpty
+		return "", ErrWriteChannelsEmpty
 	}
 	var writer strings.Builder
 	_, err := writer.WriteString("#EXTM3U\n")
 	if err != nil {
-		return nil, ErrWriteM3UInternal
+		return "", ErrWriteM3UInternal
 	}
 
-	for _, ch := range channels {
-		_, err := writer.WriteString(fmt.Sprintf("#EXTINF:%d,", ch.Length))
+	for i := range channels {
+		_, err := writer.WriteString(fmt.Sprintf("#EXTINF:%d,", channels[i].Length))
 		if err != nil {
-			return nil, ErrWriteM3UInternal
+			return "", ErrWriteM3UInternal
 		}
 
-		err = writeTagAttrs(&writer, &ch)
+		err = writeTagAttrs(&writer, channels[i])
 		if err != nil {
-			return nil, ErrWriteM3UInternal
+			return "", ErrWriteM3UInternal
 		}
-		_, err = writer.WriteString(fmt.Sprintf(",%s\n%s\n", ch.Name, ch.Uri))
+		_, err = writer.WriteString(fmt.Sprintf(",%s\n%s\n", channels[i].Name, channels[i].Uri))
 		if err != nil {
-			return nil, ErrWriteM3UInternal
+			return "", ErrWriteM3UInternal
 		}
 	}
-	return new(writer.String()), nil
+	return writer.String(), nil
 }
 
-func writeTagAttrs(w *strings.Builder, ch *models.Channel) error {
+func writeTagAttrs(w *strings.Builder, ch models.Channel) error {
 	for _, kv := range [][2]string{
 		{"tvg-id", ch.TvgID},
 		{"tvg-name", ch.TvgName},

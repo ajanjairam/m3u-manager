@@ -4,6 +4,13 @@
 
 package repository
 
+type Cgroup struct {
+	ID         int64  `json:"id"`
+	Title      string `json:"title"`
+	Active     bool   `json:"active"`
+	PlaylistID *int64 `json:"playlist_id"`
+}
+
 type Channel struct {
 	ID         int64   `json:"id"`
 	Name       string  `json:"name"`
@@ -12,9 +19,19 @@ type Channel struct {
 	TvgID      *string `json:"tvg_id"`
 	TvgName    *string `json:"tvg_name"`
 	TvgLogo    *string `json:"tvg_logo"`
-	GroupTitle *string `json:"group_title"`
-	Active     int64   `json:"active"`
+	GroupID    *int64  `json:"group_id"`
+	Active     bool    `json:"active"`
 	PlaylistID *int64  `json:"playlist_id"`
+}
+
+type Filter struct {
+	ID         int64   `json:"id"`
+	Name       string  `json:"name"`
+	PlaylistID *int64  `json:"playlist_id"`
+	GroupID    *int64  `json:"group_id"`
+	Include    *string `json:"include"`
+	Exclude    *string `json:"exclude"`
+	Active     bool    `json:"active"`
 }
 
 type Playlist struct {

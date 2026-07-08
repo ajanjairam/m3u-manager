@@ -1,0 +1,9 @@
+-- name: FindAllGroup :many
+SELECT sqlc.embed(CGROUP), sqlc.embed(PLAYLIST) FROM CGROUP
+INNER JOIN PLAYLIST ON PLAYLIST.ID=CGROUP.PLAYLIST_ID;
+
+-- name: SaveGroup :one
+INSERT INTO CGROUP
+    (TITLE, PLAYLIST_ID)
+VALUES (?, ?)
+RETURNING *;

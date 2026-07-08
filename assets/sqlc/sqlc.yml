@@ -12,5 +12,9 @@ sql:
         overrides:
           - column: "playlist.active"
             go_type: "bool"
-          - column: "track.active"
+          - column: "channel.active"
+            go_type: "bool"
+          - column: "cgroup.active"
+            go_type: "bool"
+          - column: "filter.active"
             go_type: "bool"

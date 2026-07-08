@@ -1,0 +1,1 @@
+var e=`/api/v1`,t=/^https?:\/\/[^\s/$.?#].[^\s]*$/;export{t as n,e as t};

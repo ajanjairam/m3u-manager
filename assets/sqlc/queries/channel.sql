@@ -1,15 +1,15 @@
 -- name: FindAllChannel :many
 SELECT * FROM CHANNEL;
 
--- name: FindAllChannelPagination :many
-SELECT * FROM CHANNEL
-ORDER BY PLAYLIST_ID, ID
-LIMIT sqlc.arg(PageSize)
-OFFSET sqlc.arg(Page);
+-- name: FindAllChannelAndGroup :many
+SELECT sqlc.embed(CHANNEL), sqlc.embed(CGROUP) FROM CHANNEL
+INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+ORDER BY CHANNEL.PLAYLIST_ID, CHANNEL.ID;
 
 -- name: FindAllActiveChannel :many
-SELECT * FROM CHANNEL
-WHERE ACTIVE = 1;
+SELECT sqlc.embed(CHANNEL), sqlc.embed(CGROUP) FROM CHANNEL
+INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+WHERE CHANNEL.ACTIVE = 1;
 
 -- name: FindChannelById :one
 SELECT * FROM CHANNEL
@@ -17,6 +17,21 @@ WHERE ID = ? LIMIT 1;
 
 -- name: SaveChannel :one
 INSERT INTO CHANNEL
-    (NAME, LENGTH, URI, TVG_ID, TVG_NAME, TVG_LOGO, GROUP_TITLE, PLAYLIST_ID)
+    (NAME, LENGTH, URI, TVG_ID, TVG_NAME, TVG_LOGO, GROUP_ID, PLAYLIST_ID)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: FindChannelByPlaylist :many
+SELECT * FROM CHANNEL
+WHERE PLAYLIST_ID = ?;
+
+-- name: FindChannelByPlaylistAndGroup :many
+SELECT * FROM CHANNEL
+WHERE PLAYLIST_ID = ?
+AND GROUP_ID = ?;
+
+-- name: UpdateChannelsDisable :many
+UPDATE CHANNEL
+SET ACTIVE = 0
+WHERE ID IN (sqlc.slice(ids))
 RETURNING *;
