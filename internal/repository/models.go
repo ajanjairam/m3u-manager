@@ -26,7 +26,7 @@ type Channel struct {
 type ChannelGroup struct {
 	ID         int64     `json:"id"`
 	Title      string    `json:"title"`
-	Active     int64     `json:"active"`
+	Active     bool      `json:"active"`
 	PlaylistID *int64    `json:"playlist_id"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`

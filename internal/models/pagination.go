@@ -9,9 +9,12 @@ type Pagination[T any] struct {
 }
 
 func NewPagination[T any](items []T, total int64, page int64, pageSize int64) Pagination[T] {
-	totalPages := total / pageSize
-	if total%pageSize > 0 {
-		totalPages++
+
+	var totalPages int64
+	if pageSize == 0 {
+		totalPages = total
+	} else {
+		totalPages = (total + pageSize - 1) / pageSize
 	}
 	return Pagination[T]{
 		Items:      items,

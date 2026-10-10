@@ -22,7 +22,7 @@ func (q *Queries) DeleteChannelByPlaylist(ctx context.Context, playlistID *int64
 
 const findAllActiveChannel = `-- name: FindAllActiveChannel :many
 SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, channel.created_at, channel.updated_at, channel_group.id, channel_group.title, channel_group.active, channel_group.playlist_id, channel_group.created_at, channel_group.updated_at FROM CHANNEL
-INNER JOIN CHANNEL_GROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+INNER JOIN CHANNEL_GROUP ON CHANNEL.GROUP_ID = CHANNEL_GROUP.ID
 WHERE CHANNEL.ACTIVE = 1
 `
 
@@ -115,7 +115,7 @@ func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
 
 const findAllChannelAndGroup = `-- name: FindAllChannelAndGroup :many
 SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, channel.created_at, channel.updated_at, channel_group.id, channel_group.title, channel_group.active, channel_group.playlist_id, channel_group.created_at, channel_group.updated_at FROM CHANNEL
-INNER JOIN CHANNEL_GROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+INNER JOIN CHANNEL_GROUP ON CHANNEL.GROUP_ID = CHANNEL_GROUP.ID
 ORDER BY CHANNEL.PLAYLIST_ID, CHANNEL.ID
 `
 

@@ -14,7 +14,7 @@ sql:
             go_type: "bool"
           - column: "channel.active"
             go_type: "bool"
-          - column: "cgroup.active"
+          - column: "channel_group.active"
             go_type: "bool"
           - column: "filter.active"
             go_type: "bool"

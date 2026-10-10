@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/ajanjairam/m3u-manager/internal/models"
@@ -28,7 +27,7 @@ func (s *ChannelService) FindAllChannel(ctx context.Context) ([]repository.Chann
 func (s *ChannelService) FindAllChannelPagination(ctx context.Context, page uint64, pageSize uint64) (models.Pagination[models.ChannelResponse], error) {
 	result, err := s.repo.FindAllChannelAndGroup(ctx)
 	if err != nil {
-		return models.NewPagination([]models.ChannelResponse{}, 0, 0, 0), errors.New(fmt.Sprintf("unable to fetch channels. sql error:%s", err.Error()))
+		return models.NewPagination([]models.ChannelResponse{}, 0, 0, 0), fmt.Errorf("unable to fetch channels. sql error:%s", err.Error())
 	}
 	var channels []models.ChannelResponse
 	lo.ForEach(result, func(row repository.FindAllChannelAndGroupRow, index int) {

@@ -11,7 +11,7 @@ import (
 
 const findAllGroup = `-- name: FindAllGroup :many
 SELECT channel_group.id, channel_group.title, channel_group.active, channel_group.playlist_id, channel_group.created_at, channel_group.updated_at, playlist.id, playlist.name, playlist.uri, playlist.active, playlist.created_at, playlist.updated_at FROM CHANNEL_GROUP
-INNER JOIN PLAYLIST ON PLAYLIST.ID=CGROUP.PLAYLIST_ID
+INNER JOIN PLAYLIST ON PLAYLIST.ID=CHANNEL_GROUP.PLAYLIST_ID
 `
 
 type FindAllGroupRow struct {
