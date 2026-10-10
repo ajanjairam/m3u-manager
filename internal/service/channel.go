@@ -34,7 +34,7 @@ func (s *ChannelService) FindAllChannelPagination(ctx context.Context, page uint
 	lo.ForEach(result, func(row repository.FindAllChannelAndGroupRow, index int) {
 		channels = append(channels, models.ChannelResponse{
 			Channel: row.Channel,
-			Group:   row.Cgroup,
+			Group:   row.ChannelGroup,
 		})
 	})
 	channels = lo.Ternary(channels != nil, channels, []models.ChannelResponse{})
@@ -57,7 +57,7 @@ func (s *ChannelService) GetM3UPlaylist(ctx context.Context) (string, error) {
 			TvgID:      *row.Channel.TvgID,
 			TvgName:    *row.Channel.TvgName,
 			TvgLogo:    *row.Channel.TvgLogo,
-			GroupTitle: row.Cgroup.Title,
+			GroupTitle: row.ChannelGroup.Title,
 			Name:       row.Channel.Name,
 			Uri:        row.Channel.Uri,
 		})

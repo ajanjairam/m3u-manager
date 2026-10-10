@@ -9,18 +9,12 @@ type PlaylistResponse struct {
 
 type GroupResponse struct {
 	repository.Playlist
-	Groups []repository.Cgroup `json:"groups"`
+	Groups []repository.ChannelGroup `json:"groups"`
 }
 
 type ChannelResponse struct {
 	repository.Channel
-	Group repository.Cgroup `json:"group"`
-}
-
-type FilterResponse struct {
-	repository.Filter
-	Group    repository.Cgroup   `json:"group"`
-	Playlist repository.Playlist `json:"playlist"`
+	Group repository.ChannelGroup `json:"group"`
 }
 
 type AddFilterRequest struct {

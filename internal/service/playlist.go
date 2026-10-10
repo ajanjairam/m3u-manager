@@ -63,10 +63,10 @@ func (s *PlaylistService) SavePlaylistAndChannels(ctx context.Context, input rep
 	}
 
 	var channels []repository.Channel
-	var groups []repository.Cgroup
+	var groups []repository.ChannelGroup
 	for _, track := range m3uPlaylist.Channels {
 		var groupId int64
-		group, isExists := lo.Find(groups, func(item repository.Cgroup) bool {
+		group, isExists := lo.Find(groups, func(item repository.ChannelGroup) bool {
 			return item.Title == track.GroupTitle
 		})
 		if isExists {

@@ -19,13 +19,13 @@ func (s *ChannelService) FindAllGroup(ctx context.Context) ([]models.GroupRespon
 			return item.ID == row.Playlist.ID
 		})
 		if isExist {
-			playlist[index].Groups = lo.UniqBy(append(playlist[index].Groups, row.Cgroup), func(item repository.Cgroup) string {
+			playlist[index].Groups = lo.UniqBy(append(playlist[index].Groups, row.ChannelGroup), func(item repository.ChannelGroup) string {
 				return item.Title
 			})
 		} else {
 			playlist = append(playlist, models.GroupResponse{
 				Playlist: row.Playlist,
-				Groups:   []repository.Cgroup{row.Cgroup},
+				Groups:   []repository.ChannelGroup{row.ChannelGroup},
 			})
 		}
 	})
