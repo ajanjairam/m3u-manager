@@ -26,14 +26,14 @@ func registerPlaylistRoutes(app fiber.Router, ps *service.PlaylistService) {
 	playlistApp.Get("/:id", func(c fiber.Ctx) error {
 		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 		if err != nil {
-			return c.Status(400).JSON(fiber.Map{"message": "id should be an integer"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "id should be an integer"})
 		}
 		playlist, err := ps.FindPlaylistById(c.Context(), id)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return c.Status(404).JSON(fiber.Map{"message": fmt.Sprintf("playlist id '%d' not found", id)})
 			}
-			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 		return c.Status(fiber.StatusOK).JSON(playlist)
 	})
@@ -44,7 +44,7 @@ func registerPlaylistRoutes(app fiber.Router, ps *service.PlaylistService) {
 			URI  string `json:"uri"`
 		}
 		if err := c.Bind().All(&body); err != nil {
-			return c.Status(400).JSON(fiber.Map{"message": err.Error()})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
 		}
 
 		result, err := ps.SavePlaylistAndChannels(c.Context(), repository.SavePlaylistParams{
@@ -52,9 +52,31 @@ func registerPlaylistRoutes(app fiber.Router, ps *service.PlaylistService) {
 			Uri:  body.URI,
 		})
 		if err != nil {
-			return c.Status(500).JSON(fiber.Map{"message": err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
 		}
 
-		return c.Status(201).JSON(fiber.Map{"playlist": result.Playlist, "channels": result.Channels})
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"playlist": result.Playlist, "channels": result.Channels})
+	})
+
+	playlistApp.Delete("/:id", func(c fiber.Ctx) error {
+		playlistId, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if(err != nil){
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": err.Error()})
+		}
+		channels, err := strconv.ParseBool(c.Query("channels"))
+		if(err != nil){
+			channels = true
+		}
+		var success bool
+		if(channels){
+			success, err = ps.DeletePlaylistAndChannels(c, playlistId)
+		} else {
+			success, err = ps.DeletePlaylist(c, playlistId)
+		}
+		if(err != nil || !success){
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+		} else {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
 	})
 }

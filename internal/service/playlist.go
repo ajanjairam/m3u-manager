@@ -104,3 +104,23 @@ func (s *PlaylistService) SavePlaylistAndChannels(ctx context.Context, input rep
 
 	return models.PlaylistResponse{Playlist: insertedPlayList, Channels: channels}, nil
 }
+
+func (s *PlaylistService) DeletePlaylist(ctx context.Context, id int64) (bool, error) {
+	err := s.repo.DeletePlaylist(ctx, id);
+	if (err != nil){
+		return false, err
+	}
+	return true, nil
+}
+
+func (s *PlaylistService) DeletePlaylistAndChannels(ctx context.Context, id int64) (bool, error) {
+	success, err := s.DeletePlaylist(ctx, id)
+	if(err != nil || !success){
+		return false, err
+	}
+	err = s.repo.DeleteChannelByPlaylist(ctx, &id)
+	if(err != nil){
+		return false, err
+	}
+	return true, nil
+}

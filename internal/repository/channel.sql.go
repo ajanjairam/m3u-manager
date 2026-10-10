@@ -10,6 +10,16 @@ import (
 	"strings"
 )
 
+const deleteChannelByPlaylist = `-- name: DeleteChannelByPlaylist :exec
+DELETE FROM CHANNEL
+WHERE PLAYLIST_ID = ?
+`
+
+func (q *Queries) DeleteChannelByPlaylist(ctx context.Context, playlistID *int64) error {
+	_, err := q.db.ExecContext(ctx, deleteChannelByPlaylist, playlistID)
+	return err
+}
+
 const findAllActiveChannel = `-- name: FindAllActiveChannel :many
 SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, cgroup.id, cgroup.title, cgroup.active, cgroup.playlist_id FROM CHANNEL
 INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID

@@ -35,3 +35,7 @@ UPDATE CHANNEL
 SET ACTIVE = 0
 WHERE ID IN (sqlc.slice(ids))
 RETURNING *;
+
+-- name: DeleteChannelByPlaylist :exec
+DELETE FROM CHANNEL
+WHERE PLAYLIST_ID = ?;

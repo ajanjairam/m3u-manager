@@ -9,6 +9,16 @@ import (
 	"context"
 )
 
+const deletePlaylist = `-- name: DeletePlaylist :exec
+DELETE FROM PLAYLIST
+WHERE ID = ?
+`
+
+func (q *Queries) DeletePlaylist(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deletePlaylist, id)
+	return err
+}
+
 const findAllPlaylist = `-- name: FindAllPlaylist :many
 SELECT id, name, uri, active FROM PLAYLIST
 `

@@ -13,3 +13,7 @@ WHERE URI = ? LIMIT 1;
 INSERT INTO PLAYLIST (NAME, URI)
 VALUES (?, ?)
 RETURNING *;
+
+-- name: DeletePlaylist :exec
+DELETE FROM PLAYLIST
+WHERE ID = ?;
