@@ -21,14 +21,14 @@ func (q *Queries) DeleteChannelByPlaylist(ctx context.Context, playlistID *int64
 }
 
 const findAllActiveChannel = `-- name: FindAllActiveChannel :many
-SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, cgroup.id, cgroup.title, cgroup.active, cgroup.playlist_id FROM CHANNEL
-INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, channel.created_at, channel.updated_at, channel_group.id, channel_group.title, channel_group.active, channel_group.playlist_id, channel_group.created_at, channel_group.updated_at FROM CHANNEL
+INNER JOIN CHANNEL_GROUP ON CHANNEL.GROUP_ID = CGROUP.ID
 WHERE CHANNEL.ACTIVE = 1
 `
 
 type FindAllActiveChannelRow struct {
-	Channel Channel `json:"channel"`
-	Cgroup  Cgroup  `json:"cgroup"`
+	Channel      Channel      `json:"channel"`
+	ChannelGroup ChannelGroup `json:"channel_group"`
 }
 
 func (q *Queries) FindAllActiveChannel(ctx context.Context) ([]FindAllActiveChannelRow, error) {
@@ -51,10 +51,14 @@ func (q *Queries) FindAllActiveChannel(ctx context.Context) ([]FindAllActiveChan
 			&i.Channel.GroupID,
 			&i.Channel.Active,
 			&i.Channel.PlaylistID,
-			&i.Cgroup.ID,
-			&i.Cgroup.Title,
-			&i.Cgroup.Active,
-			&i.Cgroup.PlaylistID,
+			&i.Channel.CreatedAt,
+			&i.Channel.UpdatedAt,
+			&i.ChannelGroup.ID,
+			&i.ChannelGroup.Title,
+			&i.ChannelGroup.Active,
+			&i.ChannelGroup.PlaylistID,
+			&i.ChannelGroup.CreatedAt,
+			&i.ChannelGroup.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -70,7 +74,7 @@ func (q *Queries) FindAllActiveChannel(ctx context.Context) ([]FindAllActiveChan
 }
 
 const findAllChannel = `-- name: FindAllChannel :many
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id, created_at, updated_at FROM CHANNEL
 `
 
 func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
@@ -93,6 +97,8 @@ func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
 			&i.GroupID,
 			&i.Active,
 			&i.PlaylistID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -108,14 +114,14 @@ func (q *Queries) FindAllChannel(ctx context.Context) ([]Channel, error) {
 }
 
 const findAllChannelAndGroup = `-- name: FindAllChannelAndGroup :many
-SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, cgroup.id, cgroup.title, cgroup.active, cgroup.playlist_id FROM CHANNEL
-INNER JOIN CGROUP ON CHANNEL.GROUP_ID = CGROUP.ID
+SELECT channel.id, channel.name, channel.length, channel.uri, channel.tvg_id, channel.tvg_name, channel.tvg_logo, channel.group_id, channel.active, channel.playlist_id, channel.created_at, channel.updated_at, channel_group.id, channel_group.title, channel_group.active, channel_group.playlist_id, channel_group.created_at, channel_group.updated_at FROM CHANNEL
+INNER JOIN CHANNEL_GROUP ON CHANNEL.GROUP_ID = CGROUP.ID
 ORDER BY CHANNEL.PLAYLIST_ID, CHANNEL.ID
 `
 
 type FindAllChannelAndGroupRow struct {
-	Channel Channel `json:"channel"`
-	Cgroup  Cgroup  `json:"cgroup"`
+	Channel      Channel      `json:"channel"`
+	ChannelGroup ChannelGroup `json:"channel_group"`
 }
 
 func (q *Queries) FindAllChannelAndGroup(ctx context.Context) ([]FindAllChannelAndGroupRow, error) {
@@ -138,10 +144,14 @@ func (q *Queries) FindAllChannelAndGroup(ctx context.Context) ([]FindAllChannelA
 			&i.Channel.GroupID,
 			&i.Channel.Active,
 			&i.Channel.PlaylistID,
-			&i.Cgroup.ID,
-			&i.Cgroup.Title,
-			&i.Cgroup.Active,
-			&i.Cgroup.PlaylistID,
+			&i.Channel.CreatedAt,
+			&i.Channel.UpdatedAt,
+			&i.ChannelGroup.ID,
+			&i.ChannelGroup.Title,
+			&i.ChannelGroup.Active,
+			&i.ChannelGroup.PlaylistID,
+			&i.ChannelGroup.CreatedAt,
+			&i.ChannelGroup.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -157,7 +167,7 @@ func (q *Queries) FindAllChannelAndGroup(ctx context.Context) ([]FindAllChannelA
 }
 
 const findChannelById = `-- name: FindChannelById :one
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id, created_at, updated_at FROM CHANNEL
 WHERE ID = ? LIMIT 1
 `
 
@@ -175,12 +185,14 @@ func (q *Queries) FindChannelById(ctx context.Context, id int64) (Channel, error
 		&i.GroupID,
 		&i.Active,
 		&i.PlaylistID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const findChannelByPlaylist = `-- name: FindChannelByPlaylist :many
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id, created_at, updated_at FROM CHANNEL
 WHERE PLAYLIST_ID = ?
 `
 
@@ -204,6 +216,8 @@ func (q *Queries) FindChannelByPlaylist(ctx context.Context, playlistID *int64) 
 			&i.GroupID,
 			&i.Active,
 			&i.PlaylistID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -219,7 +233,7 @@ func (q *Queries) FindChannelByPlaylist(ctx context.Context, playlistID *int64) 
 }
 
 const findChannelByPlaylistAndGroup = `-- name: FindChannelByPlaylistAndGroup :many
-SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id FROM CHANNEL
+SELECT id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id, created_at, updated_at FROM CHANNEL
 WHERE PLAYLIST_ID = ?
 AND GROUP_ID = ?
 `
@@ -249,6 +263,8 @@ func (q *Queries) FindChannelByPlaylistAndGroup(ctx context.Context, arg FindCha
 			&i.GroupID,
 			&i.Active,
 			&i.PlaylistID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -267,7 +283,7 @@ const saveChannel = `-- name: SaveChannel :one
 INSERT INTO CHANNEL
     (NAME, LENGTH, URI, TVG_ID, TVG_NAME, TVG_LOGO, GROUP_ID, PLAYLIST_ID)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id
+RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id, created_at, updated_at
 `
 
 type SaveChannelParams struct {
@@ -304,6 +320,8 @@ func (q *Queries) SaveChannel(ctx context.Context, arg SaveChannelParams) (Chann
 		&i.GroupID,
 		&i.Active,
 		&i.PlaylistID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -312,7 +330,7 @@ const updateChannelsDisable = `-- name: UpdateChannelsDisable :many
 UPDATE CHANNEL
 SET ACTIVE = 0
 WHERE ID IN (/*SLICE:ids*/?)
-RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id
+RETURNING id, name, length, uri, tvg_id, tvg_name, tvg_logo, group_id, active, playlist_id, created_at, updated_at
 `
 
 func (q *Queries) UpdateChannelsDisable(ctx context.Context, ids []int64) ([]Channel, error) {
@@ -345,6 +363,8 @@ func (q *Queries) UpdateChannelsDisable(ctx context.Context, ids []int64) ([]Cha
 			&i.GroupID,
 			&i.Active,
 			&i.PlaylistID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

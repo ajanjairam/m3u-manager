@@ -39,8 +39,6 @@ func (s *HTTPServer) Register(db *sql.DB, repo *repository.Queries) *HTTPServer 
 	registerPlaylistRoutes(v1Api, ps)
 	ts := service.NewChannelService(db, repo)
 	registerChannelRoutes(v1Api, ts)
-	fis := service.NewFilterService(db, repo)
-	registerFilterRoutes(v1Api, fis)
 
 	return s
 }

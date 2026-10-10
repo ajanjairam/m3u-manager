@@ -10,13 +10,13 @@ import (
 )
 
 const findAllGroup = `-- name: FindAllGroup :many
-SELECT cgroup.id, cgroup.title, cgroup.active, cgroup.playlist_id, playlist.id, playlist.name, playlist.uri, playlist.active FROM CGROUP
+SELECT channel_group.id, channel_group.title, channel_group.active, channel_group.playlist_id, channel_group.created_at, channel_group.updated_at, playlist.id, playlist.name, playlist.uri, playlist.active, playlist.created_at, playlist.updated_at FROM CHANNEL_GROUP
 INNER JOIN PLAYLIST ON PLAYLIST.ID=CGROUP.PLAYLIST_ID
 `
 
 type FindAllGroupRow struct {
-	Cgroup   Cgroup   `json:"cgroup"`
-	Playlist Playlist `json:"playlist"`
+	ChannelGroup ChannelGroup `json:"channel_group"`
+	Playlist     Playlist     `json:"playlist"`
 }
 
 func (q *Queries) FindAllGroup(ctx context.Context) ([]FindAllGroupRow, error) {
@@ -29,14 +29,18 @@ func (q *Queries) FindAllGroup(ctx context.Context) ([]FindAllGroupRow, error) {
 	for rows.Next() {
 		var i FindAllGroupRow
 		if err := rows.Scan(
-			&i.Cgroup.ID,
-			&i.Cgroup.Title,
-			&i.Cgroup.Active,
-			&i.Cgroup.PlaylistID,
+			&i.ChannelGroup.ID,
+			&i.ChannelGroup.Title,
+			&i.ChannelGroup.Active,
+			&i.ChannelGroup.PlaylistID,
+			&i.ChannelGroup.CreatedAt,
+			&i.ChannelGroup.UpdatedAt,
 			&i.Playlist.ID,
 			&i.Playlist.Name,
 			&i.Playlist.Uri,
 			&i.Playlist.Active,
+			&i.Playlist.CreatedAt,
+			&i.Playlist.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -52,10 +56,10 @@ func (q *Queries) FindAllGroup(ctx context.Context) ([]FindAllGroupRow, error) {
 }
 
 const saveGroup = `-- name: SaveGroup :one
-INSERT INTO CGROUP
+INSERT INTO CHANNEL_GROUP
     (TITLE, PLAYLIST_ID)
 VALUES (?, ?)
-RETURNING id, title, active, playlist_id
+RETURNING id, title, active, playlist_id, created_at, updated_at
 `
 
 type SaveGroupParams struct {
@@ -63,14 +67,16 @@ type SaveGroupParams struct {
 	PlaylistID *int64 `json:"playlist_id"`
 }
 
-func (q *Queries) SaveGroup(ctx context.Context, arg SaveGroupParams) (Cgroup, error) {
+func (q *Queries) SaveGroup(ctx context.Context, arg SaveGroupParams) (ChannelGroup, error) {
 	row := q.db.QueryRowContext(ctx, saveGroup, arg.Title, arg.PlaylistID)
-	var i Cgroup
+	var i ChannelGroup
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
 		&i.Active,
 		&i.PlaylistID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

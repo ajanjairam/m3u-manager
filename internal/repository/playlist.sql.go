@@ -20,7 +20,7 @@ func (q *Queries) DeletePlaylist(ctx context.Context, id int64) error {
 }
 
 const findAllPlaylist = `-- name: FindAllPlaylist :many
-SELECT id, name, uri, active FROM PLAYLIST
+SELECT id, name, uri, active, created_at, updated_at FROM PLAYLIST
 `
 
 func (q *Queries) FindAllPlaylist(ctx context.Context) ([]Playlist, error) {
@@ -37,6 +37,8 @@ func (q *Queries) FindAllPlaylist(ctx context.Context) ([]Playlist, error) {
 			&i.Name,
 			&i.Uri,
 			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -52,7 +54,7 @@ func (q *Queries) FindAllPlaylist(ctx context.Context) ([]Playlist, error) {
 }
 
 const findPlaylistById = `-- name: FindPlaylistById :one
-SELECT id, name, uri, active FROM PLAYLIST
+SELECT id, name, uri, active, created_at, updated_at FROM PLAYLIST
 WHERE ID = ? LIMIT 1
 `
 
@@ -64,12 +66,14 @@ func (q *Queries) FindPlaylistById(ctx context.Context, id int64) (Playlist, err
 		&i.Name,
 		&i.Uri,
 		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const findPlaylistByUri = `-- name: FindPlaylistByUri :one
-SELECT id, name, uri, active FROM PLAYLIST
+SELECT id, name, uri, active, created_at, updated_at FROM PLAYLIST
 WHERE URI = ? LIMIT 1
 `
 
@@ -81,6 +85,8 @@ func (q *Queries) FindPlaylistByUri(ctx context.Context, uri string) (Playlist, 
 		&i.Name,
 		&i.Uri,
 		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -88,7 +94,7 @@ func (q *Queries) FindPlaylistByUri(ctx context.Context, uri string) (Playlist, 
 const savePlaylist = `-- name: SavePlaylist :one
 INSERT INTO PLAYLIST (NAME, URI)
 VALUES (?, ?)
-RETURNING id, name, uri, active
+RETURNING id, name, uri, active, created_at, updated_at
 `
 
 type SavePlaylistParams struct {
@@ -104,6 +110,8 @@ func (q *Queries) SavePlaylist(ctx context.Context, arg SavePlaylistParams) (Pla
 		&i.Name,
 		&i.Uri,
 		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
